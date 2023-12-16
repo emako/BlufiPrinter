@@ -3,6 +3,7 @@ using Dumpify;
 using System.IO.Ports;
 
 ConsolePrinter.PrintInternal("Blufi Printer");
+ConsolePrinter.PrintInternal("Programe Url: https://github.com/emako/BlufiPrinter");
 NativeMethod.DisableQuickEditMode();
 
 var tabs = SerialPortProvider.GetPortNames()
@@ -45,6 +46,7 @@ try
 catch (Exception e)
 {
     ConsolePrinter.PrintInternal(e.Message);
+    serialPort.Dispose();
     goto READ_COMNAME;
 }
 
