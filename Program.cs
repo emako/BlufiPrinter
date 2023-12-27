@@ -5,8 +5,7 @@ using System.Reflection;
 using System.Text.Json;
 
 BlufiPrinterJson? json = null;
-Version version = Assembly.GetExecutingAssembly().GetName().Version!;
-ConsolePrinter.PrintInternal($"Blufi Printer v{version.Major}.{version.Minor}");
+ConsolePrinter.PrintInternal($"Blufi Printer v{Assembly.GetExecutingAssembly().GetName().Version!.Major}");
 ConsolePrinter.PrintInternal("Program Url: https://github.com/emako/BlufiPrinter");
 NativeMethod.DisableQuickEditMode();
 
