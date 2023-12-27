@@ -1,10 +1,17 @@
 ﻿using BlufiPrinter;
 using Dumpify;
 using System.IO.Ports;
+using System.Reflection;
+using System.Text.Json;
 
-ConsolePrinter.PrintInternal("Blufi Printer");
-ConsolePrinter.PrintInternal("Programe Url: https://github.com/emako/BlufiPrinter");
+BlufiPrinterJson? json = null;
+Version version = Assembly.GetExecutingAssembly().GetName().Version!;
+ConsolePrinter.PrintInternal($"Blufi Printer v{version.Major}.{version.Minor}");
+ConsolePrinter.PrintInternal("Program Url: https://github.com/emako/BlufiPrinter");
 NativeMethod.DisableQuickEditMode();
+
+string jsonFile = Path.Combine(Path.GetTempPath(), "BlufiPrinter.json");
+string? comName = null;
 
 var tabs = SerialPortProvider.GetPortNames()
     .Select(tab => $"{tab.ComName} : {tab.ActualName}")
@@ -13,8 +20,41 @@ var tabs = SerialPortProvider.GetPortNames()
 READ_COMNAME:
 ConsolePrinter.PrintInternal("Serial Port list:");
 ConsolePrinter.PrintInternal(tabs.DumpText());
-ConsolePrinter.PrintInternal($"Please input device COM number ...");
-string? comName = Console.ReadLine();
+
+if (File.Exists(jsonFile))
+{
+    try
+    {
+        string jsonString = File.ReadAllText(jsonFile);
+        json = JsonSerializer.Deserialize<BlufiPrinterJson>(jsonString);
+
+        if (json != null)
+        {
+            ConsolePrinter.PrintInternal($"Try to connect the latest device {json.ComName}.");
+            ConsolePrinter.PrintInternal("Please input another device COM number in 3 seconds ...");
+            Task<string?> readTask = Task.Run(Console.ReadLine);
+            Task completedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(3)));
+
+            if (completedTask == readTask)
+            {
+                comName = await readTask;
+            }
+            else
+            {
+                comName = json.ComName.ToString();
+            }
+        }
+    }
+    catch
+    {
+    }
+}
+
+if (string.IsNullOrWhiteSpace(comName))
+{
+    ConsolePrinter.PrintInternal("Please input device COM number ...");
+    comName = Console.ReadLine();
+}
 
 if (string.IsNullOrWhiteSpace(comName))
 {
@@ -41,7 +81,11 @@ SerialPort serialPort = new(comName)
 try
 {
     serialPort.Open();
-    ConsolePrinter.PrintInternal($"Connected to {serialPort.PortName}.");
+
+    json ??= new();
+    json.ComName = comName;
+    File.WriteAllText(jsonFile, JsonSerializer.Serialize(json));
+    ConsolePrinter.PrintInternal($"Connected to {serialPort.PortName} (BaudRate={serialPort.BaudRate}, StopBits={(int)serialPort.StopBits}, DataBits={serialPort.DataBits}, Parity={serialPort.Parity}).");
 }
 catch (Exception e)
 {
@@ -52,5 +96,18 @@ catch (Exception e)
 
 while (true)
 {
-    ConsolePrinter.Print(serialPort.ReadLine());
+    try
+    {
+        if (!serialPort.IsOpen)
+        {
+            Thread.Sleep(1000);
+            serialPort.Open();
+        }
+
+        ConsolePrinter.Print(serialPort.ReadLine());
+    }
+    catch (Exception e)
+    {
+        ConsolePrinter.PrintInternal(e.Message);
+    }
 }
