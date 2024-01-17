@@ -30,9 +30,9 @@ if (File.Exists(jsonFile))
         if (json != null)
         {
             ConsolePrinter.PrintInternal($"Try to connect the latest device {json.ComName}.");
-            ConsolePrinter.PrintInternal("Please input another device COM number in 3 seconds ...");
+            ConsolePrinter.PrintInternal("Please input another device COM number in 2 seconds ...");
             Task<string?> readTask = Task.Run(Console.ReadLine);
-            Task completedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(3)));
+            Task completedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(2)));
 
             if (completedTask == readTask)
             {
